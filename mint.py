@@ -1,23 +1,28 @@
 import os
 import logging
 import psycopg2
-from psycopg2.extras import RealDictCursor
 from web3 import Web3
 from decimal import Decimal
 from datetime import datetime
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+from dotenv import load_dotenv
 
-POSTGRES_USER = "postgres"
-POSTGRES_PASSWORD = "123123"
-POSTGRES_DB = "maigabt"
-POSTGRES_HOST = "localhost"
-POSTGRES_PORT = "5432"
+# Load environment variables from .env file
+load_dotenv()
 
-WEB3_RPC = "https://opbnb-testnet-rpc.bnbchain.org"
-XP_TOKEN_CONTRACT_ADDRESS = "0x183738640c37341fdf9b27902473cfd85d853a93"
-XP_OWNER_PRIVATE_KEY = "0x7525908b9b8b5e16e64f0ed67c903e87bd6850dbe0c186db5340d47a4a32d49a"
-CHAIN_ID = 5611
+# PostgreSQL
+POSTGRES_USER = os.getenv("POSTGRES_USER")
+POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
+POSTGRES_DB = os.getenv("POSTGRES_DB")
+POSTGRES_HOST = os.getenv("POSTGRES_HOST")
+POSTGRES_PORT = os.getenv("POSTGRES_PORT")
+
+# Web3 / Blockchain
+WEB3_RPC = os.getenv("WEB3_RPC")
+XP_TOKEN_CONTRACT_ADDRESS = os.getenv("XP_TOKEN_CONTRACT_ADDRESS")
+XP_OWNER_PRIVATE_KEY = os.getenv("XP_OWNER_PRIVATE_KEY")
+CHAIN_ID = int(os.getenv("CHAIN_ID"))
 
 XP_TOKEN_ABI = [
     {
