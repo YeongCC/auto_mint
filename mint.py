@@ -4,6 +4,7 @@ import psycopg2
 from web3 import Web3
 from decimal import Decimal
 from datetime import datetime
+from eth_account import Account
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 from dotenv import load_dotenv
@@ -60,7 +61,14 @@ def get_users():
     conn.close()
     return users
 
-def mint_xp(wallet_address, amount, nonce, web3, contract):
+def mint_xp(wallet_address, amount):
+    logging.info(f"🔄 Minting → {wallet_address}")
+    web3 = Web3(Web3.HTTPProvider(WEB3_RPC))
+    contract = web3.eth.contract(address=web3.to_checksum_address(XP_TOKEN_CONTRACT_ADDRESS), abi=XP_TOKEN_ABI)
+    owner = Account.from_key(XP_OWNER_PRIVATE_KEY)
+    nonce = web3.eth.get_transaction_count(owner.address, 'pending')
+  
+    logging.info(f"🔄 nonce → {nonce}")
     tx = contract.functions.mint(
         wallet_address,
         web3.to_wei(amount, 'ether')
@@ -71,7 +79,7 @@ def mint_xp(wallet_address, amount, nonce, web3, contract):
         "nonce": nonce,
     })
 
-    signed_tx = web3.eth.account.sign_transaction(tx, private_key=XP_OWNER_PRIVATE_KEY)
+    signed_tx = owner.sign_transaction(tx) 
     tx_hash = web3.eth.send_raw_transaction(signed_tx.raw_transaction)
     receipt = web3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
 
@@ -139,11 +147,6 @@ def run():
         logging.info("❌ No users with XP found.")
         return
 
-    web3 = Web3(Web3.HTTPProvider(WEB3_RPC))
-    owner = web3.eth.account.from_key(XP_OWNER_PRIVATE_KEY)
-    nonce = web3.eth.get_transaction_count(owner.address)
-    contract = web3.eth.contract(address=web3.to_checksum_address(XP_TOKEN_CONTRACT_ADDRESS), abi=XP_TOKEN_ABI)
-
     for username, profile_id, xp, wallet_address, wallet_id in users:
         try:
             if has_pending_transaction(profile_id, xp):
@@ -152,7 +155,7 @@ def run():
         
             xp_to_mint = Decimal(xp - 1)
             logging.info(f"🔄 Minting {xp_to_mint} XP for {username} → {wallet_address}")
-            tx_hash = mint_xp(wallet_address, Decimal(xp_to_mint), nonce, web3, contract)
+            tx_hash = mint_xp(wallet_address, Decimal(xp_to_mint))
             if tx_hash:
                 record_transaction(
                     wallet_id=wallet_id,
@@ -169,7 +172,6 @@ def run():
                 logging.error(f"❌ TX failed for {username}")
         except Exception as e:
             logging.error(f"🔥 Error minting for {username}: {e}")
-        nonce += 1
 
 
 if __name__ == "__main__":
